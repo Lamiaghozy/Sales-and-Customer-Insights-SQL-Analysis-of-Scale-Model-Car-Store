@@ -1,0 +1,104 @@
+-- ==========================================================
+-- Scale Model Cars Analysis Project
+-- SQL Queries for Dataquest Guided Project
+-- ==========================================================
+
+-- ==========================================================
+-- Question 1: Which Products Should We Order More or Less Of?
+-- ==========================================================
+
+-- Step 1: Identify Low Stock Products
+WITH Low_stock AS (
+    SELECT 
+        p.productCode, 
+        p.productName, 
+        ROUND(SUM(o.quantityOrdered) / p.quantityInStock, 2) AS low_stock
+    FROM products AS p
+    JOIN orderdetails AS o
+        ON p.productCode = o.productCode
+    GROUP BY p.productCode, p.productName
+    ORDER BY low_stock DESC
+    LIMIT 10
+)
+-- Step 2: Combine Low Stock with High Product Performance
+SELECT *
+FROM Low_stock
+WHERE productCode IN (
+    SELECT productCode
+    FROM (
+        SELECT 
+            p.productCode,
+            SUM(o.quantityOrdered * o.priceEach) AS performance
+        FROM products AS p
+        JOIN orderdetails AS o
+            ON p.productCode = o.productCode
+        GROUP BY p.productCode
+        ORDER BY performance DESC
+        LIMIT 10
+    )
+);
+
+-- ==========================================================
+-- Question 2: How Should We Match Marketing and Communication Strategies to Customer Behavior?
+-- ==========================================================
+
+-- Step 1: Calculate Profit per Customer
+WITH Customer_Profit AS (
+    SELECT 
+        o.customerNumber, 
+        SUM(od.quantityOrdered * (od.priceEach - p.buyPrice)) AS profit
+    FROM products AS p
+    JOIN orderdetails AS od
+        ON p.productCode = od.productCode
+    JOIN orders AS o
+        ON o.orderNumber = od.orderNumber
+    GROUP BY o.customerNumber
+),
+-- Step 2: Rank Customers into Segments
+Ranked_Customers AS (
+    SELECT 
+        customerNumber,
+        profit,
+        CASE 
+            WHEN profit >= (SELECT profit FROM Customer_Profit ORDER BY profit DESC LIMIT 1 OFFSET 4)
+                THEN 'VIP'
+            WHEN profit <= (SELECT profit FROM Customer_Profit ORDER BY profit ASC LIMIT 1 OFFSET 4)
+                THEN 'Less-Engaged'
+            ELSE 'Regular'
+        END AS segment
+    FROM Customer_Profit
+)
+-- Step 3: Retrieve Customer Details with Segments
+SELECT 
+    c.contactLastName,
+    c.contactFirstName,
+    c.city,
+    c.country,
+    rc.profit,
+    rc.segment
+FROM Ranked_Customers AS rc
+JOIN customers AS c
+    ON c.customerNumber = rc.customerNumber
+WHERE rc.segment IN ('VIP', 'Less-Engaged')
+ORDER BY rc.segment DESC, rc.profit DESC;
+
+-- ==========================================================
+-- Question 3: How Much Can We Spend on Acquiring New Customers?
+-- ==========================================================
+
+-- Step 1: Calculate Profit per Customer
+WITH AVG_customer_profit AS (
+    SELECT 
+        o.customerNumber, 
+        SUM(od.quantityOrdered * (od.priceEach - p.buyPrice)) AS profit
+    FROM products AS p
+    JOIN orderdetails AS od
+        ON p.productCode = od.productCode
+    JOIN orders AS o
+        ON o.orderNumber = od.orderNumber
+    GROUP BY o.customerNumber
+)
+-- Step 2: Compute Average Customer Lifetime Value (CLV)
+SELECT 
+    ROUND(AVG(profit), 2) AS average_customer_profit
+FROM AVG_customer_profit;
