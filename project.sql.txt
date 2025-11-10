@@ -1,0 +1,363 @@
+-- project.sql
+-- Dataquest: Scale Model Cars - Project queries
+-- Created: 2025-11-09
+-- Author: Lamia
+
+/**********************
+ 1) Brief table descriptions & relationships
+ 
+**********************/
+
+-- Customers: customer details (customerNumber PK), contact and address info.
+-- Employees: employee details (employeeNumber PK), managers (reportsTo FK to employeeNumber).
+-- Offices: office locations (officeCode PK), linked to Employees via officeCode.
+-- Orders: sales orders (orderNumber PK) — links to Customers via customerNumber.
+-- OrderDetails: order line items (orderNumber, productCode) — links to Orders and Products.
+-- Payments: customer payments (customerNumber FK) and paymentDate, amount.
+-- Products: product master list (productCode PK), price, quantityInStock, productLine FK.
+-- ProductLines: product line categories (productLine PK), description.
+
+-- Relationship summary:
+-- Orders.customerNumber -> Customers.customerNumber
+-- OrderDetails.orderNumber -> Orders.orderNumber
+-- OrderDetails.productCode -> Products.productCode
+-- Products.productLine -> ProductLines.productLine
+-- Employees.officeCode -> Offices.officeCode
+-- Employees.reportsTo -> Employees.employeeNumber (self-join)
+
+/**********************
+ 2) Quick peek: view first 5 rows of every table
+**********************/
+SELECT * FROM Customers LIMIT 5;
+SELECT * FROM Employees LIMIT 5;
+SELECT * FROM Offices LIMIT 5;
+SELECT * FROM Orders LIMIT 5;
+SELECT * FROM OrderDetails LIMIT 5;
+SELECT * FROM Payments LIMIT 5;
+SELECT * FROM Products LIMIT 5;
+SELECT * FROM ProductLines LIMIT 5;
+
+/**********************
+ 3) Row counts
+**********************/
+SELECT 'Customers' AS table_name, COUNT(*) AS number_of_rows FROM Customers;
+SELECT 'Employees' AS table_name, COUNT(*) AS number_of_rows FROM Employees;
+SELECT 'Offices' AS table_name, COUNT(*) AS number_of_rows FROM Offices;
+SELECT 'Orders' AS table_name, COUNT(*) AS number_of_rows FROM Orders;
+SELECT 'OrderDetails' AS table_name, COUNT(*) AS number_of_rows FROM OrderDetails;
+SELECT 'Payments' AS table_name, COUNT(*) AS number_of_rows FROM Payments;
+SELECT 'Products' AS table_name, COUNT(*) AS number_of_rows FROM Products;
+SELECT 'ProductLines' AS table_name, COUNT(*) AS number_of_rows FROM ProductLines;
+
+/**********************
+ 4) Number of attributes (columns) per table using PRAGMA
+   
+**********************/
+SELECT 'Customers' AS table_name, (SELECT COUNT(*) FROM pragma_table_info('Customers')) AS number_of_attributes;
+SELECT 'Employees' AS table_name, (SELECT COUNT(*) FROM pragma_table_info('Employees')) AS number_of_attributes;
+SELECT 'Offices' AS table_name, (SELECT COUNT(*) FROM pragma_table_info('Offices')) AS number_of_attributes;
+SELECT 'Orders' AS table_name, (SELECT COUNT(*) FROM pragma_table_info('Orders')) AS number_of_attributes;
+SELECT 'OrderDetails' AS table_name, (SELECT COUNT(*) FROM pragma_table_info('OrderDetails')) AS number_of_attributes;
+SELECT 'Payments' AS table_name, (SELECT COUNT(*) FROM pragma_table_info('Payments')) AS number_of_attributes;
+SELECT 'Products' AS table_name, (SELECT COUNT(*) FROM pragma_table_info('Products')) AS number_of_attributes;
+SELECT 'ProductLines' AS table_name, (SELECT COUNT(*) FROM pragma_table_info('ProductLines')) AS number_of_attributes;
+
+/**********************
+ 5) Final summary table (UNION ALL)
+   This builds the exact shape you need: table_name | number_of_attributes | number_of_rows
+   Using subqueries for both attributes and rows (keeps it dynamic).
+**********************/
+SELECT
+  'Customers' AS table_name,
+  (SELECT COUNT(*) FROM pragma_table_info('Customers')) AS number_of_attributes,
+  (SELECT COUNT(*) FROM Customers) AS number_of_rows
+UNION ALL
+SELECT
+  'Products' AS table_name,
+  (SELECT COUNT(*) FROM pragma_table_info('Products')),
+  (SELECT COUNT(*) FROM Products)
+UNION ALL
+SELECT
+  'ProductLines' AS table_name,
+  (SELECT COUNT(*) FROM pragma_table_info('ProductLines')),
+  (SELECT COUNT(*) FROM ProductLines)
+UNION ALL
+SELECT
+  'Orders' AS table_name,
+  (SELECT COUNT(*) FROM pragma_table_info('Orders')),
+  (SELECT COUNT(*) FROM Orders)
+UNION ALL
+SELECT
+  'OrderDetails' AS table_name,
+  (SELECT COUNT(*) FROM pragma_table_info('OrderDetails')),
+  (SELECT COUNT(*) FROM OrderDetails)
+UNION ALL
+SELECT
+  'Payments' AS table_name,
+  (SELECT COUNT(*) FROM pragma_table_info('Payments')),
+  (SELECT COUNT(*) FROM Payments)
+UNION ALL
+SELECT
+  'Employees' AS table_name,
+  (SELECT COUNT(*) FROM pragma_table_info('Employees')),
+  (SELECT COUNT(*) FROM Employees)
+UNION ALL
+SELECT
+  'Offices' AS table_name,
+  (SELECT COUNT(*) FROM pragma_table_info('Offices')),
+  (SELECT COUNT(*) FROM Offices)
+ORDER BY table_name;  
+
+Question 1: Which Products Should We Order More of or Less of?
+
+The goal of this task is to analyze the sales database of scale model cars to answer the question: “Which products should we order more of or less of?” This requires understanding product inventory (low stock) and product performance (sales revenue).
+
+The task is divided into three main parts:
+
+Compute the low-stock ratio per product to identify products that are nearly out-of-stock.
+
+Compute the product performance (total sales revenue) to identify high-performing products.
+
+Combine both metrics using a Common Table Expression (CTE) to produce a priority restocking list, highlighting products that are both in high demand and at risk of running out.
+
+The approach demonstrates SQL skills including JOIN, aggregation functions (SUM), grouping, rounding, CTEs, subqueries, and ordering results. This solution helps optimize inventory management and improves supply decision-making.
+-- ===============================================
+-- Task 1: Compute Low Stock
+-- Identify the top 10 products with the highest ratio of quantity ordered to quantity in stock
+-- ===============================================
+
+SELECT 
+    p.productCode,
+    p.productName,
+    ROUND(SUM(o.quantityOrdered) / p.quantityInStock, 2) AS low_stock
+FROM products AS p
+JOIN orderdetails AS o
+  ON p.productCode = o.productCode
+GROUP BY p.productCode, p.productName
+ORDER BY low_stock DESC
+LIMIT 10;
+
+
+-- ===============================================
+-- Task 2: Compute Product Performance
+-- Identify the top 10 products by total sales (quantity * price)
+-- ===============================================
+
+SELECT 
+    p.productCode,
+    p.productName,
+    SUM(o.quantityOrdered * o.priceEach) AS performance
+FROM products AS p
+JOIN orderdetails AS o
+  ON p.productCode = o.productCode
+GROUP BY p.productCode, p.productName
+ORDER BY performance DESC
+LIMIT 10;
+
+
+-- ===============================================
+-- Task 3: Priority Products for Restocking
+-- Combine low stock and performance using a CTE
+-- Show products that are low in stock and include their performance
+-- ===============================================
+
+WITH Low_stock AS (
+    SELECT 
+        p.productCode,
+        p.productName,
+        ROUND(SUM(o.quantityOrdered) / p.quantityInStock, 2) AS low_stock
+    FROM products AS p
+    JOIN orderdetails AS o
+      ON p.productCode = o.productCode
+    GROUP BY p.productCode, p.productName
+    ORDER BY low_stock DESC
+    LIMIT 10
+),
+Performance AS (
+    SELECT 
+        p.productCode,
+        SUM(o.quantityOrdered * o.priceEach) AS performance
+    FROM products AS p
+    JOIN orderdetails AS o
+      ON p.productCode = o.productCode
+    GROUP BY p.productCode
+)
+
+SELECT 
+    l.productCode,
+    l.productName,
+    l.low_stock,
+    p.performance
+FROM Low_stock l
+JOIN Performance p
+  ON l.productCode = p.productCode
+ORDER BY l.low_stock DESC;
+
+Question 2: How Should We Match Marketing and Communication Strategies to Customer Behavior?
+
+Matching Marketing Strategies to Customer Behavior
+
+This analysis aims to identify VIP (high-profit) and less-engaged (low-profit) customers to guide marketing and communication strategies. Profit per customer is computed using sales and cost data from the products, orderdetails, and orders tables, then linked to customer profiles from the customers table.
+
+Customer Behavior Analysis – Segmenting VIP and Less-Engaged Customers
+
+In this part of the project, the goal is to analyze customer purchasing behavior to guide marketing and communication strategies. Specifically, we aim to identify VIP customers, who generate the highest profit for the store, and less-engaged customers, who contribute the least. By segmenting customers in this way, businesses can prioritize loyalty programs, promotions, and engagement campaigns more effectively.
+
+To tackle this task, we first compute total profit per customer by joining the orders, orderdetails, and products tables and aggregating the profit using:
+
+profit=∑(quantityOrdered×(priceEach−buyPrice))
+
+Using a Common Table Expression (CTE), we store the profit per customer and then extract the top 10 VIP customers and the bottom 10 less-engaged customers, labeling each segment for clarity. This approach not only calculates the necessary metrics but also provides actionable insights for targeted marketing and customer engagement.
+
+-- ===============================================
+-- Task 2: Top 10 VIP and Bottom 10 Less-Engaged Customers
+-- Compute profit per customer and segment them for marketing strategies
+-- ===============================================
+
+**Approach 1 — Straightforward CTE Method**
+
+A clear and intuitive approach that calculates profit per customer using a Common Table Expression (CTE).
+The query retrieves customer details alongside their total profit and highlights the top and bottom five customers by performance.
+Best for exploratory analysis and when working with smaller datasets where readability matters most.
+
+Uses a Common Table Expression to calculate customer profits and directly filter top and bottom 5 customers.
+Suitable for clarity and quick insights in small datasets.
+
+-- Top VIP and Less-Engaged Customers 
+
+-- ===============================================
+-- Task: Top 5 VIP and Bottom 5 Less-Engaged Customers
+-- ===============================================
+
+WITH Customer_Profit AS (
+    -- Compute total profit per customer
+    SELECT 
+        o.customerNumber, 
+        SUM(od.quantityOrdered * (od.priceEach - p.buyPrice)) AS profit
+    FROM products AS p
+    JOIN orderdetails AS od
+      ON p.productCode = od.productCode
+    JOIN orders AS o
+      ON o.orderNumber = od.orderNumber
+    GROUP BY o.customerNumber
+)
+
+-- Top 5 VIP Customers
+SELECT 
+    c.contactLastName,
+    c.contactFirstName,
+    c.city,
+    c.country,
+    cp.profit,
+    'VIP' AS segment
+FROM Customer_Profit AS cp
+JOIN customers AS c
+  ON c.customerNumber = cp.customerNumber
+WHERE cp.customerNumber IN (
+    SELECT customerNumber
+    FROM Customer_Profit
+    ORDER BY profit DESC
+    LIMIT 5
+)
+
+UNION ALL
+
+-- Bottom 5 Less-Engaged Customers
+SELECT 
+    c.contactLastName,
+    c.contactFirstName,
+    c.city,
+    c.country,
+    cp.profit,
+    'Less-Engaged' AS segment
+FROM Customer_Profit AS cp
+JOIN customers AS c
+  ON c.customerNumber = cp.customerNumber
+WHERE cp.customerNumber IN (
+    SELECT customerNumber
+    FROM Customer_Profit
+    ORDER BY profit ASC
+    LIMIT 5
+);
+
+
+**Approach 2 — Ranked Segmentation (Advanced)**
+
+An optimized version that applies ranking logic to dynamically segment customers by profit.
+This method scales better for large datasets and can be easily adapted into automated dashboards or customer segmentation pipelines.
+Best suited for ongoing business monitoring and data-driven marketing strategies.
+
+Adds dynamic ranking and segmentation logic for scalability and readability.
+Ideal for production-scale analysis or reporting pipelines.
+
+-- ====================================================
+-- Question 2: Identify VIP and Less-Engaged Customers
+-- ====================================================
+
+WITH Customer_Profit AS (
+    -- Step 1: Calculate total profit per customer
+    SELECT 
+        o.customerNumber, 
+        SUM(od.quantityOrdered * (od.priceEach - p.buyPrice)) AS profit
+    FROM products AS p
+    JOIN orderdetails AS od
+      ON p.productCode = od.productCode
+    JOIN orders AS o
+      ON o.orderNumber = od.orderNumber
+    GROUP BY o.customerNumber
+),
+
+Ranked_Customers AS (
+    -- Step 2: Rank customers by profit
+    SELECT 
+        customerNumber,
+        profit,
+        CASE 
+            WHEN profit >= (SELECT profit FROM Customer_Profit ORDER BY profit DESC LIMIT 1 OFFSET 4)
+                THEN 'VIP'
+            WHEN profit <= (SELECT profit FROM Customer_Profit ORDER BY profit ASC LIMIT 1 OFFSET 4)
+                THEN 'Less-Engaged'
+            ELSE 'Regular'
+        END AS segment
+    FROM Customer_Profit
+)
+
+-- Step 3: Display top and bottom 5 customers with details
+SELECT 
+    c.contactLastName,
+    c.contactFirstName,
+    c.city,
+    c.country,
+    rc.profit,
+    rc.segment
+FROM Ranked_Customers AS rc
+JOIN customers AS c
+  ON c.customerNumber = rc.customerNumber
+WHERE rc.segment IN ('VIP', 'Less-Engaged')
+ORDER BY rc.segment DESC, rc.profit DESC;
+
+Question 3: How Much Can We Spend on Acquiring New Customers?
+
+To determine how much the company can reasonably invest in acquiring new customers, we first needed to measure customer growth and spending trends over time. The earlier analysis showed a decline in new customers since 2003, suggesting the need for a revitalized marketing approach. To make this decision data-driven, we calculated the Customer Lifetime Value (CLV) — the average profit generated by each customer throughout their engagement with the company. This figure serves as a financial benchmark for how much can be spent on customer acquisition while maintaining profitability.
+
+WITH
+AVG_customer_profit AS (
+    SELECT 
+        o.customerNumber, 
+        SUM(quantityOrdered * (priceEach - buyPrice)) AS profit
+    FROM products p
+    JOIN orderdetails od
+        ON p.productCode = od.productCode
+    JOIN orders o
+        ON o.orderNumber = od.orderNumber
+    GROUP BY o.customerNumber
+)
+SELECT 
+    ROUND(AVG(profit), 2) AS average_customer_profit
+FROM AVG_customer_profit;
+
+Conclusion
+
+Through the three business questions explored in this project, we applied SQL to extract, analyze, and interpret key insights that guide data-driven decision-making. First, we identified the most profitable products, helping the company understand which items contribute the most to overall revenue. Next, we segmented customers into VIP and less-engaged groups, offering a foundation for targeted marketing and retention strategies. Finally, we calculated the average customer lifetime value (CLV) to estimate how much can be reasonably spent on acquiring new customers while maintaining profitability.
+
+Overall, these analyses demonstrate how structured data exploration can transform raw transactional information into actionable business intelligence, driving smarter strategy, focused customer engagement, and sustainable growth.
