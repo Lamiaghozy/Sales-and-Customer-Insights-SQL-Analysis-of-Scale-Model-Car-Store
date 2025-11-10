@@ -1,2 +1,145 @@
-# Sales-and-Customer-Insights-SQL-Analysis-of-Scale-Model-Car-Store
-“SQL-based data analysis project exploring sales trends, customer behavior, and inventory management for a scale model car store to support data-driven business decisions.
+# **Sales and Customer Insights: SQL Analysis of Scale Model Car Store**
+
+## **Project Overview**
+
+Data analysis is a critical tool in optimising business decisions. This project demonstrates how SQL can be used to extract actionable insights from a sales records database of a scale model car store. The goal is to support decision-making around inventory management, customer engagement, and marketing strategy by analysing sales performance and customer behaviour.
+
+---
+
+## **Business Questions**
+
+This project focuses on answering three key business questions:
+
+1. **Which products should we order more of or less of?**
+
+   * Identify low-stock products and assess their sales performance to prioritise restocking.
+
+2. **How should we tailor marketing and communication strategies to customer behaviour?**
+
+   * Categorise customers into VIPs and less-engaged segments to guide targeted marketing campaigns.
+
+3. **How much can we spend on acquiring new customers?**
+
+   * Compute the Customer Lifetime Value (LTV) to inform spending on customer acquisition and predict future revenue.
+
+---
+
+## **Database Schema**
+
+The analysis uses a sales database with the following tables:
+
+| Table Name   | Description                              |
+| ------------ | ---------------------------------------- |
+| Customers    | Customer details, including contact info |
+| Employees    | Employee records                         |
+| Offices      | Sales office information                 |
+| Orders       | Customer order data                      |
+| OrderDetails | Individual items within each order       |
+| Payments     | Customer payment records                 |
+| Products     | Scale model car products                 |
+| ProductLines | Product line categories                  |
+
+---
+
+## **Approach**
+
+1. **Inventory Analysis (Question 1)**
+
+   * Compute low stock for each product using a correlated subquery: `SUM(quantityOrdered) / quantityInStock`.
+   * Compute product performance using `SUM(quantityOrdered * priceEach)` to measure revenue per product.
+   * Combine both metrics using Common Table Expressions (CTEs) to identify priority products for restocking.
+
+2. **Customer Segmentation (Question 2)**
+
+   * Calculate profit per customer using `SUM(quantityOrdered * (priceEach - buyPrice))`.
+   * Identify the top 5 VIP customers and the bottom 5 least-engaged customers using CTEs.
+   * Highlight opportunities for personalised marketing strategies to drive loyalty and engagement.
+
+3. **Customer Acquisition Insights (Question 3)**
+
+   * Compute the Customer Lifetime Value (LTV) as the average profit per customer.
+   * Use LTV to determine the budget available for acquiring new customers and projecting future revenue.
+
+---
+
+## **Key SQL Techniques Used**
+
+* Joins (`INNER JOIN`) across multiple tables
+* Aggregation functions (`SUM`, `AVG`)
+* Grouping (`GROUP BY`) and ordering (`ORDER BY`)
+* Common Table Expressions (CTEs) for modular, readable queries
+* Correlated subqueries for product inventory calculations
+* Filtering using the `IN` operator for combined CTE outputs
+
+---
+
+## **Insights & Results**
+
+### **1. Priority Products for Restocking**
+
+The following products require immediate restocking due to high performance and low stock:
+
+| Product Name             | Product Line |
+| ------------------------ | ------------ |
+| 1968 Ford Mustang        | Classic Cars |
+| 1911 Ford Town Car       | Vintage Cars |
+| 1928 Mercedes-Benz SSK   | Vintage Cars |
+| 1960 BSA Gold Star DBD34 | Motorcycles  |
+| 1997 BMW F650 ST         | Motorcycles  |
+| 1928 Ford Phaeton Deluxe | Vintage Cars |
+| 2002 Yamaha YZR M1       | Motorcycles  |
+| The Mayflower            | Ships        |
+| F/A 18 Hornet 1/72       | Planes       |
+| Pont Yacht               | Ships        |
+
+### **2. Customer Segmentation**
+
+**VIP Customers:**
+
+| Name           | City       | Country   | Profit ($) |
+| -------------- | ---------- | --------- | ---------- |
+| Diego Freyre   | Madrid     | Spain     | 326,519.66 |
+| Susan Nelson   | San Rafael | USA       | 236,769.39 |
+| Jeff Young     | NYC        | USA       | 72,370.09  |
+| Peter Ferguson | Melbourne  | Australia | 70,311.07  |
+| Janine Labrune | Nantes     | France    | 60,875.30  |
+
+**Least-Engaged Customers:**
+
+| Name           | City       | Country | Profit ($) |
+| -------------- | ---------- | ------- | ---------- |
+| Mary Young     | Glendale   | USA     | 2,610.87   |
+| Leslie Taylor  | Brickhaven | USA     | 6,586.02   |
+| Franco Ricotti | Milan      | Italy   | 9,532.93   |
+| Carine Schmitt | Nantes     | France  | 10,063.80  |
+| Thomas Smith   | London     | UK      | 10,868.04  |
+
+### **3. Customer Acquisition & LTV**
+
+* **Customer Lifetime Value (LTV):** $39,039.59
+* This represents the average profit generated by a single customer over their lifetime with the store.
+* Example: Acquiring 10 new customers next month could generate $390,395 in revenue, guiding the marketing budget for customer acquisition campaigns.
+
+---
+
+## **Conclusion**
+
+This project demonstrates a complete cycle of business intelligence analysis using SQL:
+
+* **Inventory Management:** Identified top-performing products at risk of stockout.
+* **Customer Segmentation:** Determined VIP and less-engaged customer profiles to optimise marketing strategies.
+* **Revenue Forecasting & Customer Acquisition:** Calculated LTV to inform acquisition spending and predict future profits.
+
+The approach showcases the ability to combine technical SQL expertise with business strategy insights, providing actionable recommendations for data-driven decision-making in a retail environment.
+
+---
+
+## **Repository Files**
+
+* **`project.sql`** – All SQL queries used in this analysis.
+* **README.md** – Project description, approach, results, and business insights.
+
+#SQL #BusinessIntelligence #DataAnalysis #DataDriven #CustomerInsights #InventoryManagement #DataScience #PortfolioProject #RecruiterReady
+
+
+Do you want me to do that too?
