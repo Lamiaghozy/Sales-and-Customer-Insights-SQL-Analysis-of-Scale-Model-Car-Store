@@ -141,5 +141,3 @@ The approach showcases the ability to combine technical SQL expertise with busin
 
 #SQL #BusinessIntelligence #DataAnalysis #DataDriven #CustomerInsights #InventoryManagement #DataScience #PortfolioProject #RecruiterReady
 
-
-Do you want me to do that too?
